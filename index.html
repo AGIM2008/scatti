@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scatti di Natale – prenotazione</title>
+<style>
+  :root { --g:#1f5d46; --r:#b3342b; --bg:#f6f3ec; --ink:#222; --mut:#6b6b6b; --line:#ddd6c8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width:640px; margin:0 auto; padding:16px; }
+  header { text-align:center; padding:12px 0 4px; }
+  h1 { margin:0; font-size:26px; color:var(--g); }
+  .sub { color:var(--mut); margin:4px 0 0; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin:14px 0; }
+  h2 { margin:0 0 10px; font-size:18px; }
+  .opt { display:flex; gap:12px; align-items:flex-start; border:2px solid var(--line); border-radius:12px; padding:12px; margin:8px 0; cursor:pointer; }
+  .opt.on { border-color:var(--g); background:#eef6f1; }
+  .opt input[type=checkbox] { width:22px; height:22px; margin-top:2px; accent-color:var(--g); }
+  .opt small { display:block; color:var(--mut); }
+  .opt select { margin-top:8px; }
+  select, input[type=text], input[type=email], input[type=tel] { width:100%; padding:12px; font-size:16px; border:1px solid #bbb; border-radius:10px; background:#fff; }
+  .opt select { width:auto; padding:8px 10px; }
+  label.f { display:block; margin:10px 0 4px; font-weight:600; }
+  .hint { color:var(--mut); font-size:14px; margin:6px 0 0; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .tab { border:1px solid var(--g); color:var(--g); background:#fff; padding:8px 12px; border-radius:20px; font-size:15px; cursor:pointer; }
+  .tab.on { background:var(--g); color:#fff; }
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .band { padding:10px; border:1px solid var(--g); border-radius:10px; background:#fff; text-align:center; cursor:pointer; font-size:16px; }
+  .band small { display:block; font-size:13px; color:var(--mut); }
+  .band.on { background:var(--g); color:#fff; } .band.on small { color:#dfeee6; }
+  .band:disabled, .band.off { border-color:var(--line); color:#aaa; background:#faf8f3; cursor:not-allowed; }
+  .check { display:flex; gap:10px; align-items:flex-start; margin-top:12px; font-size:14px; }
+  .check input { width:20px; height:20px; accent-color:var(--g); margin-top:2px; }
+  button.go { width:100%; margin-top:14px; padding:14px; font-size:17px; font-weight:700; color:#fff; background:var(--r); border:0; border-radius:12px; cursor:pointer; }
+  button.go:disabled { opacity:.5; }
+  .err { background:#fdecea; color:#8a1f17; border:1px solid #f1b9b3; border-radius:10px; padding:10px 12px; margin-top:12px; }
+  .ok h2 { color:var(--g); }
+  .sum { background:#eef6f1; border-radius:10px; padding:10px 12px; margin:8px 0; }
+  .muted { color:var(--mut); }
+  .hide { display:none; }
+  a { color:var(--g); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🎄 Scatti di Natale</h1>
+    <p class="sub">Prenota il tuo momento davanti alla macchina fotografica</p>
+  </header>
+
+  <div id="form">
+    <section class="card">
+      <h2>1. Cosa vuoi prenotare?</h2>
+      <label class="opt" id="oN">
+        <input type="checkbox" id="cN">
+        <div><b>Foto di Natale</b><small>Sfondo natalizio. I formati (foto, biglietto, digitale) si scelgono sul posto.</small>
+          <select id="sN"><option>Famiglia</option><option>Bambini</option></select></div>
+      </label>
+      <label class="opt" id="oC">
+        <input type="checkbox" id="cC">
+        <div><b>Calendario</b><small>Calendario annuale, formato unico.</small>
+          <select id="sC"><option>Bambini</option><option>Famiglia</option></select></div>
+      </label>
+      <p class="hint">Se scegli <b>entrambi</b> occupi 2 slot consecutivi (un set per ciascuno).</p>
+    </section>
+
+    <section class="card">
+      <h2>2. Giorno e fascia oraria</h2>
+      <div id="loading" class="muted">Carico le disponibilità…</div>
+      <div class="tabs" id="tabs"></div>
+      <div class="grid" id="bands"></div>
+      <p class="hint" id="bandHint"></p>
+    </section>
+
+    <section class="card">
+      <h2>3. I tuoi dati</h2>
+      <label class="f" for="gen">Nome e cognome del genitore</label>
+      <input type="text" id="gen" autocomplete="name">
+      <label class="f" for="bamb">Nome del/dei bambino/i</label>
+      <input type="text" id="bamb" placeholder="es. Giulia e Marco">
+      <label class="f" for="cls">Classe</label>
+      <input type="text" id="cls" placeholder="es. 3A">
+      <label class="f" for="mail">Email</label>
+      <input type="email" id="mail" autocomplete="email">
+      <label class="f" for="tel">Telefono</label>
+      <input type="tel" id="tel" autocomplete="tel">
+      <p class="hint">Email e telefono servono a evitare doppie prenotazioni e a inviarti conferma e ricevuta.</p>
+      <label class="check"><input type="checkbox" id="cons">
+        <span>Acconsento al trattamento dei dati personali forniti, solo per organizzare gli scatti e gestire ordini e ritiro.</span></label>
+      <div id="err" class="err hide"></div>
+      <button class="go" id="go">Prenota</button>
+    </section>
+  </div>
+
+  <section class="card ok hide" id="done">
+    <h2>✅ Prenotazione confermata</h2>
+    <div id="sumBox"></div>
+    <p id="mailNote" class="muted"></p>
+    <p>Il pagamento e la scelta dei formati si fanno sul posto.</p>
+    <p id="cancelP"></p>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script>
+  const API = window.SCATTI_API || '';
+  function api(action, extra) {
+    if (!API || API.indexOf('INCOLLA') === 0) return Promise.reject(new Error('API non configurata'));
+    return fetch(API, { method: 'POST', redirect: 'follow', body: JSON.stringify(Object.assign({ action: action }, extra || {})) })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  }
+
+  let AV = null, SEL = null, DAY = null;
+  const $ = id => document.getElementById(id);
+
+  function need() { return ($('cN').checked ? 1 : 0) + ($('cC').checked ? 1 : 0); }
+  function showErr(m) { const e = $('err'); e.textContent = m; e.classList.remove('hide'); e.scrollIntoView({behavior:'smooth', block:'center'}); }
+  function clearErr() { $('err').classList.add('hide'); }
+
+  function load() {
+    api('availability').then(r => {
+      $('loading').classList.add('hide');
+      if (!r.ok) { showErr(r.error); return; }
+      AV = r.days;
+      if (!DAY && AV.length) DAY = AV[0].data;
+      renderTabs(); renderBands();
+    }).catch(() => { $('loading').textContent = 'Impossibile caricare le disponibilità. Controlla la connessione e ricarica la pagina.'; });
+  }
+
+  function renderTabs() {
+    $('tabs').innerHTML = '';
+    AV.forEach(d => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tab' + (d.data === DAY ? ' on' : ''); b.textContent = d.label;
+      b.onclick = () => { DAY = d.data; renderTabs(); renderBands(); };
+      $('tabs').appendChild(b);
+    });
+  }
+
+  function renderBands() {
+    const n = need(), g = $('bands'); g.innerHTML = '';
+    const day = AV.find(d => d.data === DAY);
+    if (!day) return;
+    if (SEL && SEL.data === DAY) { const b = day.bands.find(x => x.fascia === SEL.fascia); if (!b || (n === 2 ? !b.pair : b.free < 1)) SEL = null; }
+    day.bands.forEach(b => {
+      const ok = n === 2 ? b.pair : b.free > 0;
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'band' + (!ok ? ' off' : '') + (SEL && SEL.data === DAY && SEL.fascia === b.fascia ? ' on' : '');
+      el.disabled = !ok;
+      el.innerHTML = b.fascia + '–' + b.fine + '<small>' + (b.free < 1 ? 'Esaurita' : (n === 2 && !b.pair ? 'Serve 2 slot vicini' : b.free + (b.free === 1 ? ' posto' : ' posti'))) + '</small>';
+      el.onclick = () => { SEL = { data: DAY, fascia: b.fascia }; renderBands(); };
+      g.appendChild(el);
+    });
+    $('bandHint').textContent = n === 0 ? 'Prima scegli cosa prenotare.' : '';
+  }
+
+  ['cN', 'cC'].forEach(id => $(id).addEventListener('change', () => {
+    $('oN').classList.toggle('on', $('cN').checked); $('oC').classList.toggle('on', $('cC').checked);
+    if (AV) renderBands();
+  }));
+
+  $('go').onclick = () => {
+    clearErr();
+    const tipi = []; const soggetto = {};
+    if ($('cN').checked) { tipi.push('Natale'); soggetto.Natale = $('sN').value; }
+    if ($('cC').checked) { tipi.push('Calendario'); soggetto.Calendario = $('sC').value; }
+    if (!tipi.length) return showErr('Scegli cosa vuoi prenotare.');
+    if (!SEL) return showErr('Scegli giorno e fascia oraria.');
+    const payload = { tipi, soggetto, data: SEL.data, fascia: SEL.fascia, genitore: $('gen').value, bambini: $('bamb').value,
+      classe: $('cls').value, email: $('mail').value, telefono: $('tel').value, consenso: $('cons').checked };
+    $('go').disabled = true; $('go').textContent = 'Invio in corso…';
+    api('book', { data: payload }).then(r => {
+      $('go').disabled = false; $('go').textContent = 'Prenota';
+      if (!r.ok) { showErr(r.error); load(); return; }
+      $('form').classList.add('hide'); $('done').classList.remove('hide');
+      $('sumBox').innerHTML = r.items.map(i => '<div class="sum"><b>' + i.tipo + '</b> (' + i.sogg.toLowerCase() + ')<br>' + i.giorno +
+        ', fascia ' + i.fascia + '<br>Arrivo indicativo: <b>' + i.arrivo + '</b></div>').join('');
+      $('mailNote').textContent = r.mailSent ? 'Ti abbiamo inviato una email di conferma.' : 'Non siamo riusciti a inviare l\'email: salva o fotografa questa schermata.';
+      if (r.cancelUrl) { const a = document.createElement('a'); a.href = r.cancelUrl; a.textContent = 'libera lo slot';
+        $('cancelP').append('Se non puoi più venire, ', a, ' (salva questo link!).'); }
+      else $('cancelP').textContent = 'Se non puoi più venire, avvisa i rappresentanti.';
+      window.scrollTo(0, 0);
+    }).catch(() => {
+      $('go').disabled = false; $('go').textContent = 'Prenota';
+      showErr('Connessione interrotta. Prima di riprovare controlla di non aver già ricevuto una email di conferma.');
+    });
+  };
+
+  load();
+</script>
+</body>
+</html>
