@@ -30,6 +30,7 @@
   .muted { color:var(--mut); font-size:14px; }
   .hide { display:none; }
   label.f { display:block; margin:10px 0 4px; font-weight:600; }
+  .two { display:flex; gap:10px; } .two > div { flex:1; min-width:0; } .two > div:first-child { flex:0 0 38%; }
 </style>
 </head>
 <body>
@@ -57,6 +58,10 @@
       <button class="sec" id="bBack">← Torna alla ricerca</button>
       <h2 id="oTitle" style="margin:10px 0 2px"></h2>
       <div id="oTags"></div>
+      <div class="two">
+        <div><label class="f" for="oCls">Classe</label><input type="text" id="oCls" autocomplete="off"></div>
+        <div><label class="f" for="oIst">Istituto di consegna</label><select id="oIst"></select></div>
+      </div>
       <div id="lines"></div>
       <div class="tot"><span>Totale</span><span id="total">0,00 €</span></div>
       <label class="f" for="metodo">Pagamento ricevuto con</label>
@@ -88,7 +93,7 @@
   }
 
   const $ = id => document.getElementById(id);
-  let PIN = '', PRICES = null, GRATIS = [], CUR = null, QTY = {};
+  let PIN = '', PRICES = null, GRATIS = [], ISTITUTI = [], CUR = null, QTY = {};
   const eur = c => (c / 100).toFixed(2).replace('.', ',') + ' €';
   function show(id, msg) { const e = $(id); e.textContent = msg; e.classList.remove('hide'); }
   function hide(id) { $(id).classList.add('hide'); }
@@ -99,7 +104,7 @@
     api('cassaLogin', { pin: PIN }).then(r => {
       $('bLogin').disabled = false;
       if (!r.ok) return show('eLogin', r.error);
-      PRICES = r.prezzi; GRATIS = r.digitaleGratisCon;
+      PRICES = r.prezzi; GRATIS = r.digitaleGratisCon; ISTITUTI = r.istituti || [];
       $('login').classList.add('hide'); $('app').classList.remove('hide'); $('q').focus();
     }).catch(() => { $('bLogin').disabled = false; show('eLogin', 'Connessione interrotta.'); });
   };
@@ -117,7 +122,7 @@
         const d = document.createElement('div'); d.className = 'res';
         d.innerHTML = '<b></b> <span class="muted"></span><div></div>';
         d.querySelector('b').textContent = g.gen;
-        d.querySelector('span').textContent = '· ' + g.bamb + ' (' + g.classe + ')';
+        d.querySelector('span').textContent = '· ' + g.bamb + ' (' + g.classe + (g.istituto ? ' – ' + g.istituto : '') + ')';
         const t = d.lastChild;
         g.items.forEach(i => { const s = document.createElement('span'); s.className = 'tag'; s.textContent = i.label + ' – ' + i.giorno + ' ' + i.arrivo; t.appendChild(s); });
         if (g.ordinato) { const s = document.createElement('span'); s.className = 'tag warn'; s.textContent = 'ordine già registrato'; t.appendChild(s); }
@@ -130,8 +135,14 @@
   function openOrder(g) {
     CUR = g; QTY = { biglietto: 0, grande: 0, piccola: 0, digitale: 0, calendario: 0 };
     const hasN = g.items.some(i => i.tipo === 'Natale'), hasC = g.items.some(i => i.tipo === 'Calendario');
-    $('oTitle').textContent = g.gen + ' · ' + g.bamb + ' (' + g.classe + ')';
-    $('oTags').innerHTML = g.ordinato ? '<span class="tag warn">Attenzione: esiste già un ordine per questa prenotazione</span>' : '';
+    $('oTitle').textContent = g.gen + ' · ' + g.bamb;
+    $('oTags').innerHTML = '';
+    const tg = $('oTags');
+    $('oCls').value = g.classe || '';
+    const si = $('oIst'); si.innerHTML = '<option value="">Scegli…</option>';
+    ISTITUTI.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; si.appendChild(o); });
+    si.value = ISTITUTI.indexOf(g.istituto) >= 0 ? g.istituto : '';
+    if (g.ordinato) { const w = document.createElement('span'); w.className = 'tag warn'; w.textContent = 'Attenzione: esiste già un ordine per questa prenotazione'; tg.appendChild(w); }
     const defs = [];
     if (hasN) defs.push(['biglietto', 'Biglietto di auguri', () => PRICES.BIGLIETTO], ['grande', 'Foto grande', () => PRICES.FOTO_GRANDE],
                         ['piccola', 'Foto piccola', () => PRICES.FOTO_PICCOLA], ['digitale', 'Formato digitale', () => digFree() ? 0 : PRICES.DIGITALE, 1]);
@@ -171,9 +182,11 @@
   $('bConfirm').onclick = () => {
     hide('eOrder');
     if (total() === 0 && !Object.values(QTY).some(v => v > 0)) return show('eOrder', 'Nessun articolo selezionato.');
+    if (!$('oCls').value.trim()) return show('eOrder', 'Indica la classe.');
+    if (!$('oIst').value) return show('eOrder', 'Scegli l\'istituto di consegna.');
     if (!$('metodo').value) return show('eOrder', 'Scegli il metodo di pagamento.');
     $('bConfirm').disabled = true;
-    const p = Object.assign({ bookingId: CUR.id, metodo: $('metodo').value, operatore: $('oper').value }, QTY);
+    const p = Object.assign({ bookingId: CUR.id, classe: $('oCls').value, istituto: $('oIst').value, metodo: $('metodo').value, operatore: $('oper').value }, QTY);
     api('cassaConfirm', { pin: PIN, data: p }).then(r => {
       $('bConfirm').disabled = false;
       if (!r.ok) return show('eOrder', r.error);

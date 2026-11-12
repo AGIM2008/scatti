@@ -22,6 +22,7 @@
   select, input[type=text], input[type=email], input[type=tel] { width:100%; padding:12px; font-size:16px; border:1px solid #bbb; border-radius:10px; background:#fff; }
   .opt select { width:auto; padding:8px 10px; }
   label.f { display:block; margin:10px 0 4px; font-weight:600; }
+  .two { display:flex; gap:10px; } .two > div { flex:1; min-width:0; } .two > div:first-child { flex:0 0 38%; }
   .hint { color:var(--mut); font-size:14px; margin:6px 0 0; }
   .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
   .tab { border:1px solid var(--g); color:var(--g); background:#fff; padding:8px 12px; border-radius:20px; font-size:15px; cursor:pointer; }
@@ -80,8 +81,16 @@
       <input type="text" id="gen" autocomplete="name">
       <label class="f" for="bamb">Nome del/dei bambino/i</label>
       <input type="text" id="bamb" placeholder="es. Giulia e Marco">
-      <label class="f" for="cls">Classe</label>
-      <input type="text" id="cls" placeholder="es. 3A">
+      <div class="two">
+        <div>
+          <label class="f" for="cls">Classe</label>
+          <input type="text" id="cls" placeholder="es. 3A">
+        </div>
+        <div>
+          <label class="f" for="ist">Istituto</label>
+          <select id="ist"><option value="">Scegli…</option></select>
+        </div>
+      </div>
       <label class="f" for="mail">Email</label>
       <input type="email" id="mail" autocomplete="email">
       <label class="f" for="tel">Telefono</label>
@@ -124,9 +133,17 @@
       $('loading').classList.add('hide');
       if (!r.ok) { showErr(r.error); return; }
       AV = r.days;
+      fillIst(r.istituti || []);
       if (!DAY && AV.length) DAY = AV[0].data;
       renderTabs(); renderBands();
     }).catch(() => { $('loading').textContent = 'Impossibile caricare le disponibilità. Controlla la connessione e ricarica la pagina.'; });
+  }
+
+  function fillIst(list) {
+    const s = $('ist'), cur = s.value;
+    s.innerHTML = '<option value="">Scegli…</option>';
+    list.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; s.appendChild(o); });
+    if (cur && list.indexOf(cur) >= 0) s.value = cur;
   }
 
   function renderTabs() {
@@ -169,8 +186,9 @@
     if ($('cC').checked) { tipi.push('Calendario'); soggetto.Calendario = $('sC').value; }
     if (!tipi.length) return showErr('Scegli cosa vuoi prenotare.');
     if (!SEL) return showErr('Scegli giorno e fascia oraria.');
+    if (!$('ist').value) return showErr('Scegli l\'istituto.');
     const payload = { tipi, soggetto, data: SEL.data, fascia: SEL.fascia, genitore: $('gen').value, bambini: $('bamb').value,
-      classe: $('cls').value, email: $('mail').value, telefono: $('tel').value, consenso: $('cons').checked };
+      classe: $('cls').value, istituto: $('ist').value, email: $('mail').value, telefono: $('tel').value, consenso: $('cons').checked };
     $('go').disabled = true; $('go').textContent = 'Invio in corso…';
     api('book', { data: payload }).then(r => {
       $('go').disabled = false; $('go').textContent = 'Prenota';
